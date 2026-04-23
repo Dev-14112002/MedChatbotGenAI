@@ -1,9 +1,27 @@
-system_prompt = (
-    "You are an Medical assistant for question-answering tasks. "
-    "Use the following pieces of retrieved context to answer "
-    "the question. If you don't know the answer, say that you "
-    "don't know. Use three sentences maximum and keep the "
-    "answer concise."
-    "\n\n"
-    "{context}"
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+
+contextualize_q_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Given the chat history and the latest user question, "
+            "rewrite the question so it is standalone and clear.",
+        ),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
+)
+
+qa_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a helpful medical assistant.\n"
+            "Use the provided context to answer.\n\n"
+            "Context:\n{context}",
+        ),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
 )

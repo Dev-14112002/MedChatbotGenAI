@@ -13,7 +13,6 @@ from langchain.chains import create_retrieval_chain
 from langchain.chains import create_history_aware_retriever
 from langchain.chains.combine_documents import create_stuff_documents_chain
 
-
 # -------------------- APP INIT --------------------
 app = Flask(__name__)
 load_dotenv()
@@ -85,5 +84,9 @@ def chat():
 
 
 # -------------------- RUN --------------------
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
+"""
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)

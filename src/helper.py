@@ -1,6 +1,8 @@
 from langchain.document_loaders import PyPDFLoader, DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
+# from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from typing import List
 from langchain_core.documents import Document
 
@@ -40,9 +42,15 @@ def text_split(docs: List[Document]) -> List[Document]:
 # -------------------------------
 # Load embeddings
 # -------------------------------
-def download_embeddings():
+"""def download_embeddings():
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
 
     return HuggingFaceEmbeddings(
-        model_name=model_name, model_kwargs={"device": "cpu"}  # change to 'cuda' if GPU
+        model_name=model_name,
+        model_kwargs={"device": "cpu"}
     )
+"""
+
+
+def download_embeddings():
+    return OpenAIEmbeddings(model="text-embedding-3-small")

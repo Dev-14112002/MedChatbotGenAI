@@ -42,6 +42,19 @@ if not pc.has_index(index_name):
 
 index = pc.Index(index_name)
 
-docsearch = PineconeVectorStore.from_documents(
-    documents=text_chunks, index_name=index_name, embedding=embeddings, batch_size=50
-)
+# docsearch = PineconeVectorStore.from_documents(
+#     documents=text_chunks, index_name=index_name, embedding=embeddings, batch_size=50
+# )
+
+vectorstore = PineconeVectorStore(index=index, embedding=embeddings)
+
+batch_size = 20
+
+for i in range(0, len(text_chunks), batch_size):
+    batch = text_chunks[i : i + batch_size]
+
+    print(f"Uploading batch {i // batch_size + 1}")
+
+    vectorstore.add_documents(batch)
+
+print("All vectors uploaded successfully!")

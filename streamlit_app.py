@@ -1,12 +1,10 @@
-import streamlit as st
-from dotenv import load_dotenv
+import os
 import yaml
+import streamlit as st
 import streamlit_authenticator as stauth
 
+from dotenv import load_dotenv
 from yaml.loader import SafeLoader
-
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="Medical Chatbot", page_icon="🩺")
 
 # LangChain imports
 from langchain_openai import ChatOpenAI
@@ -22,8 +20,6 @@ from langchain.chains.combine_documents import (
     create_stuff_documents_chain,
 )
 
-from langchain.callbacks.base import BaseCallbackHandler
-
 # Your project imports
 from src.helper import download_embeddings
 from src.prompt import (
@@ -31,12 +27,29 @@ from src.prompt import (
     contextualize_q_prompt,
 )
 
-# ---------------- LOAD ENV ----------------
+# =========================================================
+# PAGE CONFIG
+# =========================================================
+st.set_page_config(
+    page_title="Medical Chatbot",
+    page_icon="🩺",
+    layout="wide",
+)
+
+# =========================================================
+# LOAD ENV
+# =========================================================
 load_dotenv()
 
-# ---------------- AUTH CONFIG ----------------
+# =========================================================
+# AUTH CONFIG
+# =========================================================
 with open("config.yaml") as file:
-    config = yaml.load(file, Loader=SafeLoader)
+
+    config = yaml.load(
+        file,
+        Loader=SafeLoader,
+    )
 
 authenticator = stauth.Authenticate(
     config["credentials"],
@@ -45,7 +58,9 @@ authenticator = stauth.Authenticate(
     config["cookie"]["expiry_days"],
 )
 
-# ---------------- LOGIN ----------------
+# =========================================================
+# LOGIN
+# =========================================================
 authenticator.login()
 
 authentication_status = st.session_state.get("authentication_status")
@@ -54,13 +69,15 @@ name = st.session_state.get("name")
 
 username = st.session_state.get("username")
 
-
 # =========================================================
 # SUCCESSFUL LOGIN
 # =========================================================
 if authentication_status:
 
-    authenticator.logout("Logout", "sidebar")
+    authenticator.logout(
+        "Logout",
+        "sidebar",
+    )
 
     st.sidebar.success(f"Welcome {name}")
 
@@ -69,7 +86,7 @@ if authentication_status:
     st.markdown("""
 Welcome to the **Medical AI Assistant** 👋
 
-You can ask medical questions based on the uploaded medical knowledge base.
+Ask medical questions based on the uploaded medical knowledge base.
 
 ### Example Questions
 - What causes acne?
@@ -79,31 +96,14 @@ You can ask medical questions based on the uploaded medical knowledge base.
 - Causes of migraine
 """)
 
-    # ---------------- STREAM HANDLER ----------------
-    class StreamHandler(BaseCallbackHandler):
-
-        def __init__(self, container):
-
-            self.container = container
-            self.text = ""
-
-        def on_llm_new_token(self, token: str, **kwargs):
-
-            # Append token
-            self.text += token
-
-            # Typing effect
-            self.container.markdown(self.text + "▌")
-
-        def finalize(self):
-
-            # Remove cursor
-            self.container.markdown(self.text)
-
-    # ---------------- EMBEDDINGS ----------------
+    # =========================================================
+    # EMBEDDINGS
+    # =========================================================
     embeddings = download_embeddings()
 
-    # ---------------- VECTOR STORE ----------------
+    # =========================================================
+    # VECTOR STORE
+    # =========================================================
     docsearch = PineconeVectorStore.from_existing_index(
         index_name="medical-bot",
         embedding=embeddings,
@@ -114,14 +114,18 @@ You can ask medical questions based on the uploaded medical knowledge base.
         search_kwargs={"k": 5},
     )
 
-    # ---------------- LLM ----------------
+    # =========================================================
+    # LLM
+    # =========================================================
     llm = ChatOpenAI(
         model="gpt-4o",
         temperature=0.3,
         streaming=True,
     )
 
-    # ---------------- MEMORY ----------------
+    # =========================================================
+    # MEMORY
+    # =========================================================
     if "memory" not in st.session_state:
 
         st.session_state.memory = ConversationBufferMemory(
@@ -131,7 +135,9 @@ You can ask medical questions based on the uploaded medical knowledge base.
 
     memory = st.session_state.memory
 
-    # ---------------- RAG ----------------
+    # =========================================================
+    # RAG CHAIN
+    # =========================================================
     history_aware_retriever = create_history_aware_retriever(
         llm,
         retriever,
@@ -148,17 +154,23 @@ You can ask medical questions based on the uploaded medical knowledge base.
         question_answer_chain,
     )
 
-    # ---------------- CHAT HISTORY ----------------
+    # =========================================================
+    # CHAT HISTORY
+    # =========================================================
     if "messages" not in st.session_state:
+
         st.session_state.messages = []
 
     # Display previous messages
     for message in st.session_state.messages:
 
         with st.chat_message(message["role"]):
+
             st.markdown(message["content"])
 
-    # ---------------- USER INPUT ----------------
+    # =========================================================
+    # USER INPUT
+    # =========================================================
     prompt = st.chat_input("Ask your medical question")
 
     if prompt:
@@ -173,43 +185,57 @@ You can ask medical questions based on the uploaded medical knowledge base.
 
         # Display user message
         with st.chat_message("user"):
+
             st.markdown(prompt)
 
         # Load chat history
         chat_history = memory.load_memory_variables({})["chat_history"]
 
-        # ---------------- ASSISTANT RESPONSE ----------------
+        # =========================================================
+        # ASSISTANT RESPONSE
+        # =========================================================
         with st.chat_message("assistant"):
 
             message_placeholder = st.empty()
 
-            stream_handler = StreamHandler(message_placeholder)
+            full_response = ""
 
-            response = rag_chain.invoke(
+            retrieved_sources = []
+
+            response_stream = rag_chain.stream(
                 {
                     "input": prompt,
                     "chat_history": chat_history,
-                },
-                config={"callbacks": [stream_handler]},
+                }
             )
 
-            # Final answer
-            answer = response["answer"]
+            for chunk in response_stream:
 
-            # Remove typing cursor
-            stream_handler.finalize()
+                # Stream answer progressively
+                if "answer" in chunk:
 
-            # Retrieved sources
-            sources = response.get("context", [])
+                    full_response += chunk["answer"]
 
-            # ---------------- SOURCES ----------------
-            if sources:
+                    message_placeholder.markdown(full_response + "▌")
+
+                # Save retrieved docs
+                if "context" in chunk:
+
+                    retrieved_sources = chunk["context"]
+
+            # Final clean response
+            message_placeholder.markdown(full_response)
+
+            answer = full_response
+
+            # =========================================================
+            # SOURCES
+            # =========================================================
+            if retrieved_sources:
 
                 with st.expander("📚 Sources"):
 
-                    import os
-
-                    for i, doc in enumerate(sources):
+                    for i, doc in enumerate(retrieved_sources):
 
                         source = os.path.basename(
                             doc.metadata.get(
@@ -231,7 +257,9 @@ You can ask medical questions based on the uploaded medical knowledge base.
 
                         st.write(doc.page_content[:300] + "...")
 
-        # Save assistant response
+        # =========================================================
+        # SAVE CHAT HISTORY
+        # =========================================================
         st.session_state.messages.append(
             {
                 "role": "assistant",
@@ -239,12 +267,11 @@ You can ask medical questions based on the uploaded medical knowledge base.
             }
         )
 
-        # Save conversation memory
+        # Save memory
         memory.save_context(
             {"input": prompt},
             {"output": answer},
         )
-
 
 # =========================================================
 # FAILED LOGIN
@@ -252,7 +279,6 @@ You can ask medical questions based on the uploaded medical knowledge base.
 elif authentication_status is False:
 
     st.error("Incorrect username or password")
-
 
 # =========================================================
 # NO LOGIN YET

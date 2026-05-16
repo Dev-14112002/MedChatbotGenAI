@@ -3,7 +3,7 @@ credentials:
     saksham:
       email: saksham@gmail.com
       name: Saksham
-      password: "$2b$12$KMbZh6Z4HXwoUWgnYuY2VOPd0xLvohX5nIVJ5hI1m8./SssEJfRwa"  
+      password: "$2b$12$7gU8mfWqOLe3r51F5B/YiecU8mLy6XFNLe3YyoP9lT8FK1Yxti7gS"  
 
 cookie:
   expiry_days: 7

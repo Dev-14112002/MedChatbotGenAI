@@ -1,4 +1,9 @@
 import streamlit as st
+
+# ---------------- PAGE ----------------
+st.set_page_config(page_title="Medical Chatbot", page_icon="🩺")
+
+st.title("🩺 Medical AI Assistant")
 from dotenv import load_dotenv
 import os
 import yaml
@@ -57,12 +62,6 @@ elif authentication_status is False:
 elif authentication_status is None:
 
     st.warning("Please login")
-
-
-# ---------------- PAGE ----------------
-st.set_page_config(page_title="Medical Chatbot", page_icon="🩺")
-
-st.title("🩺 Medical AI Assistant")
 
 
 class StreamHandler(BaseCallbackHandler):

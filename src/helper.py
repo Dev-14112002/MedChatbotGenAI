@@ -20,12 +20,19 @@ def load_pdf_files(data_path: str) -> List[Document]:
 # Clean metadata
 # -------------------------------
 def filter_to_minimal_docs(docs: List[Document]) -> List[Document]:
+
     minimal_docs: List[Document] = []
 
-    for doc in docs:
+    for i, doc in enumerate(docs):
+
         src = doc.metadata.get("source", "unknown")
+        page = doc.metadata.get("page", "N/A")
+
         minimal_docs.append(
-            Document(page_content=doc.page_content, metadata={"source": src})
+            Document(
+                page_content=doc.page_content,
+                metadata={"source": src, "page": page, "chunk": i},
+            )
         )
 
     return minimal_docs

@@ -1,0 +1,15 @@
+credentials:
+  usernames:
+    saksham:
+      email: saksham@gmail.com
+      name: Saksham
+      password: "$2b$12$KMbZh6Z4HXwoUWgnYuY2VOPd0xLvohX5nIVJ5hI1m8./SssEJfRwa"  
+
+cookie:
+  expiry_days: 7
+  key: random_signature_key
+  name: medical_chatbot_cookie
+
+preauthorized:
+  emails:
+    - saksham@gmail.com

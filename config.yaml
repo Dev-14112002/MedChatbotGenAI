@@ -7,7 +7,7 @@ credentials:
 
 cookie:
   expiry_days: 7
-  key: random_signature_key
+  key: 8dj38djs82js92ksj2
   name: medical_chatbot_cookie
 
 preauthorized:

@@ -69,6 +69,9 @@
                 $("#messageFormeight").append(userHtml);
 
                 $.ajax({
+                    headers: {
+                        "Authorization": "Bearer medrag_secure_2026_x7Kq91LmPz"
+                    },
                     data: {
                         msg: rawText,
                     },

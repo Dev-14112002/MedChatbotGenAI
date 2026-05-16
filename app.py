@@ -1,4 +1,9 @@
-from flask import Flask, render_template, request
+import token
+
+from flask import Flask, render_template, request, jsonify
+from functools import wraps
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import os
 
@@ -15,10 +20,12 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # -------------------- APP INIT --------------------
 app = Flask(__name__)
+limiter = Limiter(get_remote_address, app=app, default_limits=["20 per minute"])
 load_dotenv()
 
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+APP_API_TOKEN = os.environ.get("APP_API_TOKEN")
 
 if not PINECONE_API_KEY or not OPENAI_API_KEY:
     raise ValueError("API keys are missing in environment variables")
@@ -61,6 +68,21 @@ question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
 
+# -------------------- AUTH DECORATOR -------------------
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if not token:
+            return jsonify({"error": "Missing authorization token"}), 401
+
+        if token != f"Bearer {APP_API_TOKEN}":
+            return jsonify({"error": "Invalid token"}), 403
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 # -------------------- ROUTES --------------------
 @app.route("/")
 def index():
@@ -68,6 +90,8 @@ def index():
 
 
 @app.route("/get", methods=["POST"])
+@require_auth
+@limiter.limit("10 per minute")
 def chat():
     msg = request.form["msg"]
 

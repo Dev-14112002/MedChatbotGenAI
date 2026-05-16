@@ -65,27 +65,39 @@ if authentication_status:
     st.sidebar.success(f"Welcome {name}")
 
     st.title("🩺 Medical AI Assistant")
+
     st.markdown("""
 Welcome to the **Medical AI Assistant** 👋
 
 You can ask medical questions based on the uploaded medical knowledge base.
 
-Examples:
+### Example Questions
 - What causes acne?
 - Symptoms of diabetes
 - Explain hypertension
 - Treatments for asthma
+- Causes of migraine
 """)
 
     # ---------------- STREAM HANDLER ----------------
     class StreamHandler(BaseCallbackHandler):
 
         def __init__(self, container):
+
             self.container = container
             self.text = ""
 
         def on_llm_new_token(self, token: str, **kwargs):
+
+            # Append token
             self.text += token
+
+            # Typing effect
+            self.container.markdown(self.text + "▌")
+
+        def finalize(self):
+
+            # Remove cursor
             self.container.markdown(self.text)
 
     # ---------------- EMBEDDINGS ----------------
@@ -166,7 +178,7 @@ Examples:
         # Load chat history
         chat_history = memory.load_memory_variables({})["chat_history"]
 
-        # Assistant response
+        # ---------------- ASSISTANT RESPONSE ----------------
         with st.chat_message("assistant"):
 
             message_placeholder = st.empty()
@@ -181,10 +193,13 @@ Examples:
                 config={"callbacks": [stream_handler]},
             )
 
+            # Final answer
             answer = response["answer"]
 
-            message_placeholder.markdown(answer)
+            # Remove typing cursor
+            stream_handler.finalize()
 
+            # Retrieved sources
             sources = response.get("context", [])
 
             # ---------------- SOURCES ----------------
@@ -192,11 +207,15 @@ Examples:
 
                 with st.expander("📚 Sources"):
 
+                    import os
+
                     for i, doc in enumerate(sources):
 
-                        source = doc.metadata.get(
-                            "source",
-                            "Unknown",
+                        source = os.path.basename(
+                            doc.metadata.get(
+                                "source",
+                                "Unknown",
+                            )
                         )
 
                         page = doc.metadata.get(
@@ -220,7 +239,7 @@ Examples:
             }
         )
 
-        # Save memory
+        # Save conversation memory
         memory.save_context(
             {"input": prompt},
             {"output": answer},

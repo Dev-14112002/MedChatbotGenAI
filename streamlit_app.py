@@ -7,6 +7,17 @@ from yaml.loader import SafeLoader
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Medical Chatbot", page_icon="🩺")
+st.markdown("""
+Welcome to the **Medical AI Assistant** 👋
+
+You can ask medical questions based on the uploaded medical knowledge base.
+
+Examples:
+- What causes acne?
+- Symptoms of diabetes
+- Explain hypertension
+- Treatments for asthma
+""")
 
 # LangChain imports
 from langchain_openai import ChatOpenAI
@@ -171,6 +182,8 @@ if authentication_status:
             )
 
             answer = response["answer"]
+
+            message_placeholder.markdown(answer)
 
             sources = response.get("context", [])
 

@@ -209,3 +209,12 @@ __marimo__/
 
 # Docker
 Dockerfile
+
+# Old Flask frontend
+app.py
+templates/
+static/
+
+# Flask cache
+instance/
+*.db

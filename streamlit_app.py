@@ -7,17 +7,6 @@ from yaml.loader import SafeLoader
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Medical Chatbot", page_icon="🩺")
-st.markdown("""
-Welcome to the **Medical AI Assistant** 👋
-
-You can ask medical questions based on the uploaded medical knowledge base.
-
-Examples:
-- What causes acne?
-- Symptoms of diabetes
-- Explain hypertension
-- Treatments for asthma
-""")
 
 # LangChain imports
 from langchain_openai import ChatOpenAI
@@ -76,6 +65,17 @@ if authentication_status:
     st.sidebar.success(f"Welcome {name}")
 
     st.title("🩺 Medical AI Assistant")
+    st.markdown("""
+Welcome to the **Medical AI Assistant** 👋
+
+You can ask medical questions based on the uploaded medical knowledge base.
+
+Examples:
+- What causes acne?
+- Symptoms of diabetes
+- Explain hypertension
+- Treatments for asthma
+""")
 
     # ---------------- STREAM HANDLER ----------------
     class StreamHandler(BaseCallbackHandler):
@@ -98,8 +98,8 @@ if authentication_status:
     )
 
     retriever = docsearch.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 3},
+        search_type="mmr",
+        search_kwargs={"k": 5},
     )
 
     # ---------------- LLM ----------------

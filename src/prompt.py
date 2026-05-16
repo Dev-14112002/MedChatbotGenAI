@@ -5,9 +5,20 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-Given the chat history and the latest user question,
-rewrite the question so it becomes standalone, clear,
-and preserves the original meaning.
+You are a query rewriting assistant.
+
+Given the conversation history and latest user question:
+
+- Rewrite the latest question into a complete standalone question.
+- Preserve the original meaning.
+- Include important medical entities from previous conversation.
+- Resolve references like:
+  - "it"
+  - "that"
+  - "this disease"
+  - "what I asked"
+
+ONLY return the rewritten standalone question.
 """,
         ),
         MessagesPlaceholder("chat_history"),

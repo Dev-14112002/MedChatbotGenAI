@@ -1,6 +1,4 @@
-import token
-
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, session
 from functools import wraps
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -19,13 +17,15 @@ from langchain.chains import create_history_aware_retriever
 from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # -------------------- APP INIT --------------------
+load_dotenv()
 app = Flask(__name__)
 limiter = Limiter(get_remote_address, app=app, default_limits=["20 per minute"])
-load_dotenv()
+app.secret_key = os.getenv("SECRET_KEY")
+
 
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-APP_API_TOKEN = os.environ.get("APP_API_TOKEN")
+
 
 if not PINECONE_API_KEY or not OPENAI_API_KEY:
     raise ValueError("API keys are missing in environment variables")
@@ -68,29 +68,48 @@ question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
 
-# -------------------- AUTH DECORATOR -------------------
-def require_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization")
-        if not token:
-            return jsonify({"error": "Missing authorization token"}), 401
+# -------------------- Login Required Decorator -------------------
 
-        if token != f"Bearer {APP_API_TOKEN}":
-            return jsonify({"error": "Invalid token"}), 403
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user" not in session:
+            return redirect("/")
         return f(*args, **kwargs)
 
-    return decorated
+    return decorated_function
 
 
 # -------------------- ROUTES --------------------
 @app.route("/")
+def login_page():
+    return render_template("login.html")
+
+
+@app.route("/chat")
+@login_required
 def index():
     return render_template("chat.html")
 
 
+@app.route("/login", methods=["POST"])
+def login():
+
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    if username == "admin" and password == "medchat123":
+
+        session["user"] = username
+
+        return redirect("/chat")
+
+    return "Invalid credentials"
+
+
 @app.route("/get", methods=["POST"])
-@require_auth
+@login_required
 @limiter.limit("10 per minute")
 def chat():
     msg = request.form["msg"]
@@ -105,6 +124,15 @@ def chat():
     memory.save_context({"input": msg}, {"output": response["answer"]})
 
     return response["answer"]
+
+
+@app.route("/logout")
+@login_required
+def logout():
+
+    session.pop("user", None)
+
+    return redirect("/")
 
 
 # -------------------- RUN --------------------

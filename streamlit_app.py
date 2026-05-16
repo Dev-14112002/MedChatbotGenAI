@@ -46,9 +46,12 @@ authenticator = stauth.Authenticate(
 )
 
 # ---------------- LOGIN ----------------
-authentication_status = authenticator.login()
+authenticator.login()
+
+authentication_status = st.session_state.get("authentication_status")
 
 name = st.session_state.get("name")
+
 username = st.session_state.get("username")
 
 
